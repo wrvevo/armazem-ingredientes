@@ -1,0 +1,76 @@
+name: armazem-ingredientes
+
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "8080:8080"
+    environment:
+      LOG_PATH: /logs
+      SPRING_DATASOURCE_URL: jdbc:h2:file:/data/armazem;DB_CLOSE_DELAY=-1
+      CORS_ORIGINS: http://localhost:5173,http://localhost:8088
+      JWT_SECRET: armazem-vega-segredo-jwt-com-32-caracteres-minimo
+    volumes:
+      - armazem-data:/data
+      - armazem-logs:/logs
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 40s
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "8088:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+  prometheus:
+    image: prom/prometheus:v2.55.1
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./observabilidade/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    depends_on:
+      backend:
+        condition: service_healthy
+
+  loki:
+    image: grafana/loki:3.2.1
+    ports:
+      - "3100:3100"
+    command: -config.file=/etc/loki/local-config.yaml
+    volumes:
+      - ./observabilidade/loki/loki-config.yml:/etc/loki/local-config.yaml:ro
+
+  promtail:
+    image: grafana/promtail:3.2.1
+    command: -config.file=/etc/promtail/config.yml
+    volumes:
+      - ./observabilidade/promtail/promtail-config.yml:/etc/promtail/config.yml:ro
+      - armazem-logs:/logs:ro
+    depends_on:
+      - loki
+      - backend
+
+  grafana:
+    image: grafana/grafana:11.4.0
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin123
+      GF_USERS_DEFAULT_LANGUAGE: pt-BR
+    volumes:
+      - ./observabilidade/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./observabilidade/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      - prometheus
+      - loki
+
+volumes:
+  armazem-data:
+  armazem-logs:

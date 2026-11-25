@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN" monitorInterval="30">
+    <Properties>
+        <Property name="DIRETORIO">${sys:LOG_PATH:-${env:LOG_PATH:-logs}}</Property>
+        <Property name="PADRAO">%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n</Property>
+    </Properties>
+
+    <Appenders>
+        <Console name="Console" target="SYSTEM_OUT">
+            <PatternLayout pattern="${PADRAO}"/>
+        </Console>
+
+        <RollingFile name="Informacoes"
+                     fileName="${DIRETORIO}/armazem.log"
+                     filePattern="${DIRETORIO}/armazem-%d{yyyy-MM-dd}-%i.log.gz">
+            <PatternLayout pattern="${PADRAO}"/>
+            <Policies>
+                <SizeBasedTriggeringPolicy size="10 MB"/>
+                <TimeBasedTriggeringPolicy interval="1"/>
+            </Policies>
+            <DefaultRolloverStrategy max="7"/>
+        </RollingFile>
+
+        <RollingFile name="Erros"
+                     fileName="${DIRETORIO}/armazem-error.log"
+                     filePattern="${DIRETORIO}/armazem-error-%d{yyyy-MM-dd}-%i.log.gz">
+            <ThresholdFilter level="ERROR" onMatch="ACCEPT" onMismatch="DENY"/>
+            <PatternLayout pattern="${PADRAO}"/>
+            <Policies>
+                <SizeBasedTriggeringPolicy size="10 MB"/>
+                <TimeBasedTriggeringPolicy interval="1"/>
+            </Policies>
+            <DefaultRolloverStrategy max="14"/>
+        </RollingFile>
+    </Appenders>
+
+    <Loggers>
+        <Logger name="org.hibernate" level="warn"/>
+        <Logger name="org.springframework" level="info"/>
+        <Logger name="br.com.vega.armazem" level="info"/>
+        <Root level="info">
+            <AppenderRef ref="Console"/>
+            <AppenderRef ref="Informacoes"/>
+            <AppenderRef ref="Erros"/>
+        </Root>
+    </Loggers>
+</Configuration>

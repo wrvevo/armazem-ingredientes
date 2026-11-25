@@ -1,0 +1,14 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:armazem;DB_CLOSE_DELAY=-1
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+  h2:
+    console:
+      enabled: false
+
+app:
+  jwt:
+    segredo: chave-de-teste-com-mais-de-32-caracteres-ok
+    expiracao-minutos: 60
